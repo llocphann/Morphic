@@ -45,7 +45,7 @@ class HiddenFrontmatterWidget extends WidgetType {
 	}
 
 	toDOM(): HTMLElement {
-		const node = activeDocument.createElement("div");
+		const node = activeDocument.win.createDiv();
 		node.classList.add("cv-frontmatter-hidden");
 		return node;
 	}

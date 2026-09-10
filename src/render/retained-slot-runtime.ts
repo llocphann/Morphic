@@ -384,7 +384,7 @@ export class RetainedDomRuntime {
 		if (this.disposed) return "disposed";
 		if (this.structureKey === structureKey) return "reused";
 
-		const fragment = this.ownerDocument.createDocumentFragment();
+		const fragment = this.ownerDocument.win.createFragment();
 		const nextBindings = new Map<string, RetainedBinding>();
 		const register = (id: string, binding: RetainedBinding) => {
 			if (nextBindings.has(id)) {
@@ -570,7 +570,7 @@ export class RetainedDomRuntime {
 		renderer: RetainedIslandRenderer,
 		scope: RetainedResourceScope,
 	): Promise<RetainedIslandPreparationResult> {
-		const staging = binding.element.ownerDocument.createElement("div");
+		const staging = binding.element.ownerDocument.win.createDiv();
 		const isCurrent = () => this.isCurrentIsland(id, binding, generation);
 
 		try {

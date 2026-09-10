@@ -65,7 +65,7 @@ export class RetainedEditableDomRuntime {
 			throw new Error("Retained editable root and live node must be separate DOM subtrees");
 		}
 
-		this.createPlaceholder = options.createPlaceholder ?? ((ownerDocument) => ownerDocument.createElement("div"));
+		this.createPlaceholder = options.createPlaceholder ?? ((ownerDocument) => ownerDocument.win.createDiv());
 		this.retained = new RetainedDomRuntime(root, options.retained);
 		this.editable = new ConnectedEditableHost(liveNode, options.editable);
 	}

@@ -101,7 +101,7 @@ export function createCollectorBaseDocuments(
 	viewName?: string,
 ): CollectorBaseDocument[] {
 	if (!isObjectRecord(baseConfig)) return [];
-	const sourceViews = Array.isArray(baseConfig.views) ? baseConfig.views : [];
+	const sourceViews = isUnknownArray(baseConfig.views) ? baseConfig.views : [];
 	const candidates = sourceViews
 		.map((view, index) => ({ view, index }))
 		.filter((entry): entry is { view: BaseViewConfig; index: number } => isBaseView(entry.view));
@@ -226,6 +226,10 @@ function copyData(value: unknown): unknown {
 	const copy: Record<string, unknown> = {};
 	for (const key of Object.keys(value)) copy[key] = copyData(value[key]);
 	return copy;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {

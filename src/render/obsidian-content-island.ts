@@ -41,7 +41,7 @@ export function createObsidianContentIslandPatch(
 		renderer: async (context) => {
 			if (!context.isCurrent()) return;
 
-			const sizer = context.ownerDocument.createElement("div");
+			const sizer = context.ownerDocument.win.createDiv();
 			sizer.classList.add("markdown-preview-sizer", "markdown-preview-section");
 			context.container.appendChild(sizer);
 

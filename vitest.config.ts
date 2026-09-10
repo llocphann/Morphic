@@ -5,6 +5,7 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		globals: true,
+		setupFiles: [resolve(__dirname, "__mocks__/obsidian-dom.ts")],
 		include: ["src/__tests__/**/*.test.ts"],
 		coverage: {
 			provider: "v8",

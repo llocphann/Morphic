@@ -111,9 +111,9 @@ function cacheCompatibleTemplate(source: string, compiled: CompatibleTemplateIR)
 	templateCompatCache.set(source, compiled);
 	if (templateCompatCache.size <= TEMPLATE_COMPAT_CACHE_LIMIT) return;
 
-	const oldestSource = templateCompatCache.keys().next().value;
-	if (oldestSource !== undefined) {
-		templateCompatCache.delete(oldestSource);
+	const oldest = templateCompatCache.keys().next();
+	if (!oldest.done) {
+		templateCompatCache.delete(oldest.value);
 	}
 }
 

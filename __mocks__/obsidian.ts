@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-restricted-imports
 import momentLibrary from "moment";
+import "./obsidian-dom";
 
 export const moment = momentLibrary;
 

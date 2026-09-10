@@ -62,13 +62,13 @@ class NativeFilterEditorMount {
 	private showLoadFailure(error: unknown): void {
 		this.host.replaceChildren();
 		const document = this.host.ownerDocument;
-		const message = document.createElement("p");
+		const message = document.win.createEl("p");
 		message.setAttribute("role", "alert");
 		message.textContent = error instanceof Error
 			? error.message
 			: "The Bases filter editor could not be loaded.";
 
-		const retry = document.createElement("button");
+		const retry = document.win.createEl("button");
 		retry.type = "button";
 		retry.textContent = "Retry";
 		retry.addEventListener("click", () => this.open(), { once: true });

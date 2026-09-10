@@ -356,8 +356,12 @@ export class RetainedKeyedRange<K extends RetainedKey = RetainedKey> {
 
 function normalizeNodes(value: Node | readonly Node[] | null | undefined): Node[] {
 	if (value === null || value === undefined) return [];
-	if (Array.isArray(value)) return Array.from(value);
-	return [value as Node];
+	if (isNodeArray(value)) return Array.from(value);
+	return [value];
+}
+
+function isNodeArray(value: Node | readonly Node[]): value is readonly Node[] {
+	return Array.isArray(value);
 }
 
 function sameKey<K extends RetainedKey>(left: K, right: K): boolean {

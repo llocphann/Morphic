@@ -6,7 +6,7 @@ import {
 	processLogicBlocks,
 	resolveDeferredMarkdownPlaceholder,
 } from "./expression";
-import type { ExprContext, ExprValueArray } from "./expression";
+import type { ExprContext } from "./expression";
 import { stripFrontmatter } from "./frontmatter";
 import type { ViewConfig } from "./types";
 import { executeCustomViewJavaScript } from "./script-engine";
@@ -353,7 +353,16 @@ export function templateHasEditableContent(template: string): boolean {
 export const EDITABLE_PLACEHOLDER_ATTR = "data-cv-editable-placeholder";
 
 /** Overlay element augmented with the CSS-scoping observer we attach during render. */
-type ScopedContainer = HTMLElement & { __cvScopeObserver?: MutationObserver | null };
+type ScopedContainer = HTMLElement & {
+	__cvScopeObserver?: MutationObserver | null;
+	__cvStyleSheet?: CSSStyleSheet | null;
+};
+
+function removeAdoptedStyleSheet(ownerDocument: Document, styleSheet: CSSStyleSheet): void {
+	const sheets = ownerDocument.adoptedStyleSheets;
+	if (!sheets.includes(styleSheet)) return;
+	ownerDocument.adoptedStyleSheets = sheets.filter((sheet) => sheet !== styleSheet);
+}
 const MARKDOWN_VALUE_HINT_RE = /[![\]_*`~#>|<&\n\r]/;
 const URL_VALUE_HINT_RE = /\bhttps?:\/\//i;
 
@@ -441,7 +450,7 @@ export async function renderTemplate(
 		frontmatter,
 		bodyContent,
 		variables: {},
-		bases: bases as unknown as ExprValueArray,
+		bases,
 		deferredMarkdown: {
 			nextId: 0,
 			values: {},
@@ -499,9 +508,13 @@ export async function renderTemplate(
 	const doc = parser.parseFromString(filledTemplate, 'text/html');
 	const tempContainer = doc.body;
 
-	// Disconnect any previous CSS-scoping MutationObserver from a prior render
+	// Disconnect resources from a prior render before replacing the container.
 	const scoped = container as ScopedContainer;
 	if (scoped.__cvScopeObserver) { scoped.__cvScopeObserver.disconnect(); scoped.__cvScopeObserver = null; }
+	if (scoped.__cvStyleSheet) {
+		removeAdoptedStyleSheet(container.ownerDocument, scoped.__cvStyleSheet);
+		scoped.__cvStyleSheet = null;
+	}
 
 	// Clear the container and move nodes from temporary container
 	while (container.firstChild) {
@@ -531,7 +544,7 @@ export async function renderTemplate(
 			contentEl.setAttribute(EDITABLE_PLACEHOLDER_ATTR, "true");
 			contentEl.removeAttribute("id");
 		} else {
-			const sizer = container.ownerDocument.createElement("div");
+			const sizer = container.ownerDocument.win.createDiv();
 			sizer.classList.add("markdown-preview-sizer", "markdown-preview-section");
 			contentEl.appendChild(sizer);
 
@@ -540,13 +553,19 @@ export async function renderTemplate(
 		}
 	}
 
-	// Inject CSS from the separate CSS field (with template resolution)
+	// Apply per-view CSS as a constructable stylesheet so dynamic user CSS stays
+	// lifecycle-bound without injecting a forbidden <style> element.
 	if (viewConfig?.css) {
 		const resolvedCss = await resolveTemplateRaw(app, viewConfig.css, file, frontmatter, bodyContent, bases, runtimeData);
 		if (resolvedCss.trim()) {
-			const styleEl = container.ownerDocument.createElement("style");
-			styleEl.textContent = resolvedCss;
-			container.prepend(styleEl);
+			const StyleSheetConstructor = container.ownerDocument.defaultView?.CSSStyleSheet;
+			if (!StyleSheetConstructor) throw new Error("Constructable stylesheets are unavailable in this document");
+			const styleSheet = new StyleSheetConstructor();
+			await styleSheet.replace(resolvedCss);
+			const ownerDocument = container.ownerDocument;
+			ownerDocument.adoptedStyleSheets = [...ownerDocument.adoptedStyleSheets, styleSheet];
+			scoped.__cvStyleSheet = styleSheet;
+			component.register(() => removeAdoptedStyleSheet(ownerDocument, styleSheet));
 		}
 	}
 
@@ -977,7 +996,7 @@ async function resolveTemplateRaw(
 		frontmatter,
 		bodyContent,
 		variables: {},
-		bases: bases as unknown as ExprValueArray,
+		bases,
 		deferredMarkdown: {
 			nextId: 0,
 			values: {},

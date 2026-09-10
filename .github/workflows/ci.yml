@@ -65,3 +65,37 @@ jobs:
             styles.css
           if-no-files-found: error
           retention-days: 7
+
+  diagnose-tests:
+    name: diagnose-tests (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: retained
+            tests: "src/__tests__/retained-*.test.ts src/__tests__/scoped-keyed-*.test.ts src/__tests__/bot3-retained-*.test.ts src/__tests__/bot5-*retained*.test.ts src/__tests__/bot5-owner-*.test.ts"
+          - group: dom-render
+            tests: "src/__tests__/keyed-dom-reconciler.test.ts src/__tests__/obsidian-*.test.ts src/__tests__/connected-editable-host.test.ts src/__tests__/editable-content.test.ts src/__tests__/renderer*.test.ts src/__tests__/navigation-surface-hold.test.ts src/__tests__/overlay-link-binding-v2.test.ts src/__tests__/main-canvas-owner-validity.test.ts src/__tests__/main-markdown-*.test.ts"
+          - group: bases
+            tests: "src/__tests__/bases*.test.ts src/__tests__/bot*-bases-*.test.ts src/__tests__/compiler-bases-*.test.ts src/__tests__/compiler-file-bases-*.test.ts src/__tests__/main-bases-invalidation.test.ts"
+          - group: main-editor-settings
+            tests: "src/__tests__/main-*.test.ts src/__tests__/editor*.test.ts src/__tests__/settings*.test.ts src/__tests__/cv04-settings-ui-compat.test.ts src/__tests__/source-content-freshness.test.ts"
+          - group: compiler-core
+            tests: "src/__tests__/compiler-*.test.ts src/__tests__/core-*.test.ts src/__tests__/matcher*.test.ts src/__tests__/expression.test.ts src/__tests__/filters.test.ts src/__tests__/frontmatter.test.ts"
+          - group: misc
+            tests: "src/__tests__/bot3-*.test.ts src/__tests__/bot5-*.test.ts src/__tests__/canvas-dirty-scheduler.test.ts src/__tests__/clipper-filters.test.ts src/__tests__/competitive-benchmark-serialization.test.ts src/__tests__/cross-file-resolution.test.ts src/__tests__/pinned-npm.test.ts src/__tests__/release-metadata-check.test.ts src/__tests__/script-engine.test.ts src/__tests__/template-compat-cache.test.ts src/__tests__/version-bump-script.test.ts"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: node scripts/pinned-npm.mjs install --ignore-scripts --no-package-lock
+
+      - name: Test ${{ matrix.group }}
+        run: node scripts/pinned-npm.mjs test -- ${{ matrix.tests }}
