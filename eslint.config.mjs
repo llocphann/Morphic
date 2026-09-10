@@ -124,7 +124,6 @@ export default [
             "@typescript-eslint/no-unsafe-argument": "error",
             "@typescript-eslint/no-redundant-type-constituents": "error",
             "@typescript-eslint/no-unnecessary-type-assertion": "error",
-            "obsidianmd/prefer-create-el": "error",
         },
     },
     // Test files run under Vitest/jsdom and intentionally exercise repository scripts
