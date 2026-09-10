@@ -2,6 +2,17 @@
 
 All notable Morphic changes will be documented here.
 
+## 0.1.1 — 2026-09-11
+
+### Fixes
+
+- Replaced the benchmark-only synthetic `TFile` cast and forbidden ESLint suppression with a typed `TFile` fixture.
+- Removed the two Obsidian source-code lint blockers reported for `src/__benchmarks__/compiler.bench.ts` without changing production runtime behavior.
+
+### Release automation
+
+- Release version changes on `main` are now fully gated by repository hygiene, metadata validation, build, tests, lint, diff checks, checksums, and provenance attestation before publishing the exact manifest version.
+
 ## 0.1.0 — 2026-09-10
 
 ### Core V2 architecture

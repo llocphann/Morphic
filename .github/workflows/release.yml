@@ -2,8 +2,12 @@ name: Release Morphic
 
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - main
+    paths:
+      - "manifest.json"
+      - "package.json"
+      - "versions.json"
 
 permissions:
   contents: read
@@ -16,7 +20,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - name: Checkout tagged source
+      - name: Checkout release source
         uses: actions/checkout@v4
 
       - name: Setup Node 22
@@ -40,11 +44,19 @@ jobs:
           node --check scripts/repository-hygiene.mjs
           node --check version-bump.mjs
 
+      - name: Resolve release version
+        id: release
+        shell: bash
+        run: |
+          version="$(node -p "require('./manifest.json').version")"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Releasing Morphic ${version}"
+
       - name: Verify repository convergence
         run: node scripts/pinned-npm.mjs run check:repo-hygiene
 
       - name: Verify release metadata
-        run: node scripts/pinned-npm.mjs run check:release-metadata -- --tag "${GITHUB_REF_NAME}"
+        run: node scripts/pinned-npm.mjs run check:release-metadata -- --tag "${{ steps.release.outputs.version }}"
 
       - name: Build
         run: node scripts/pinned-npm.mjs run build
@@ -70,12 +82,17 @@ jobs:
             manifest.json
             SHA256SUMS.txt
 
-      - name: Create draft GitHub release
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "Morphic ${GITHUB_REF_NAME#v}" \
+          if gh release view "${VERSION}" >/dev/null 2>&1; then
+            echo "Release ${VERSION} already exists; skipping publication."
+            exit 0
+          fi
+          gh release create "${VERSION}" \
+            --target "${GITHUB_SHA}" \
+            --title "Morphic ${VERSION}" \
             --generate-notes \
-            --verify-tag \
             main.js manifest.json styles.css SHA256SUMS.txt

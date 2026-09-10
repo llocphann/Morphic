@@ -1,5 +1,6 @@
 import { bench, describe, vi } from "vitest";
-import type { App, TFile } from "obsidian";
+import { TFile } from "obsidian";
+import type { App } from "obsidian";
 import {
 	compileExpression,
 	compileFilterPipeline,
@@ -25,7 +26,8 @@ import type { FilterGroup } from "../types";
  */
 
 function makeFile(overrides: Partial<TFile> = {}): TFile {
-	return {
+	const file = new TFile();
+	Object.assign(file, {
 		name: "test.md",
 		basename: "test",
 		path: "folder/test.md",
@@ -33,8 +35,8 @@ function makeFile(overrides: Partial<TFile> = {}): TFile {
 		stat: { size: 2048, ctime: 1_000_000, mtime: 2_000_000 },
 		vault: {},
 		...overrides,
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
-	} as unknown as TFile;
+	});
+	return file;
 }
 
 function makeContext(): ExprContext {
