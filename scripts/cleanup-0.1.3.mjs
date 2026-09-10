@@ -15,6 +15,11 @@ async function appendUnique(path, marker, content) {
   await writeFile(path, `${source.trimEnd()}\n\n${content.trim()}\n`);
 }
 
+async function normalizeFinalNewline(path) {
+  const source = await readFile(path, "utf8");
+  await writeFile(path, `${source.trimEnd()}\n`);
+}
+
 // Static capability CSS belongs in styles.css, not a runtime <style> element.
 await replaceExact(
   "src/assigned-property-type-invalidation.ts",
@@ -24,8 +29,9 @@ await replaceExact(
 await replaceExact(
   "src/assigned-property-type-invalidation.ts",
   `\nfunction registerCapabilityStyles(lifecycle: LifecycleRegistrar): void {\n\tconst style = activeWindow.createEl("style");\n\tstyle.setAttribute("data-morphic-cv04-capabilities", "true");\n\tstyle.textContent = \`\n.workspace-leaf-content.cv-hide-navigation > .view-header {\n\tdisplay: none;\n}\n.morphic-navigation-hold {\n\tbackground: var(--background-primary);\n}\n\`;\n\tactiveDocument.head.appendChild(style);\n\tlifecycle.register(() => style.remove());\n}\n`,
-  `\n`,
+  ``,
 );
+await normalizeFinalNewline("src/assigned-property-type-invalidation.ts");
 await appendUnique(
   "styles.css",
   ".workspace-leaf-content.cv-hide-navigation > .view-header",
