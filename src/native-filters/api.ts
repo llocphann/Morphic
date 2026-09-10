@@ -195,7 +195,7 @@ async function discoverQueryConstructor(
 	factory: EmbedFactory,
 	file: TFile,
 ): Promise<QueryConstructor> {
-	const host = activeDocument.createElement("div");
+	const host = activeWindow.createDiv();
 	const seed = factory({ app, containerEl: host, sourcePath: "", linktext: "" }, file, "");
 	try {
 		if (typeof seed.loadQuery !== "function" || !seed.controller?.filterMenu?.globalFilterBuilder) {

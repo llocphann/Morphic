@@ -53,7 +53,7 @@ export function registerAssignedPropertyTypeInvalidation(
 }
 
 function registerCapabilityStyles(lifecycle: LifecycleRegistrar): void {
-	const style = activeDocument.createElement("style");
+	const style = activeWindow.createEl("style");
 	style.setAttribute("data-morphic-cv04-capabilities", "true");
 	style.textContent = `
 .workspace-leaf-content.cv-hide-navigation > .view-header {
