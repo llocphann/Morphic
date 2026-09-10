@@ -1053,7 +1053,7 @@ export default class CustomViewsPlugin extends Plugin {
 				},
 			};
 		}
-		const staging = container.ownerDocument.createElement("div") as ScopedOverlayElement;
+		const staging = container.ownerDocument.win.createDiv() as ScopedOverlayElement;
 		staging.addClass(CUSTOM_VIEW_CLASS);
 
 		this.registerOverlayLinkHandlers(
@@ -1203,7 +1203,7 @@ export default class CustomViewsPlugin extends Plugin {
 
 		let customEl = container.querySelector(`.${CUSTOM_VIEW_CLASS}`) as HTMLElement;
 		if (!customEl) {
-			customEl = container.ownerDocument.createElement("div");
+			customEl = container.ownerDocument.win.createDiv();
 			customEl.addClass(CUSTOM_VIEW_CLASS);
 			container.appendChild(customEl);
 			this.registerOverlayLinkHandlers(customEl, file.path, this);
@@ -1680,7 +1680,7 @@ export default class CustomViewsPlugin extends Plugin {
 				},
 			};
 		}
-		const staging = container.ownerDocument.createElement("div") as ScopedOverlayElement;
+		const staging = container.ownerDocument.win.createDiv() as ScopedOverlayElement;
 		staging.addClass(CUSTOM_VIEW_CLASS);
 		this.registerOverlayLinkHandlers(staging, file.path, context.scope);
 

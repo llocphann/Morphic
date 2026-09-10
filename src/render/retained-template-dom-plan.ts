@@ -277,14 +277,14 @@ export class RetainedTemplateDomPlan<E = unknown> {
 				}
 				case "markdown-slot": {
 					const marker = this.findUniqueComment(parsed, node.id);
-					const element = context.ownerDocument.createElement("span");
+					const element = context.ownerDocument.win.createSpan();
 					context.markdownSlot(node.id, element);
 					marker.replaceWith(element);
 					break;
 				}
 				case "content-slot": {
 					const marker = this.findUniqueComment(parsed, node.id);
-					const element = context.ownerDocument.createElement("div");
+					const element = context.ownerDocument.win.createDiv();
 					element.classList.add(
 						"markdown-rendered-content",
 						"markdown-preview-view",
@@ -448,7 +448,7 @@ function parseHtmlBodyFragment(ownerDocument: Document, source: string): Documen
 	// detached documents used in tests fall back to the current window parser.
 	const Parser = ownerDocument.defaultView?.DOMParser ?? DOMParser;
 	const parsedDocument = new Parser().parseFromString(source, "text/html");
-	const fragment = ownerDocument.createDocumentFragment();
+	const fragment = ownerDocument.win.createFragment();
 	for (const child of Array.from(parsedDocument.body.childNodes)) {
 		fragment.appendChild(ownerDocument.importNode(child, true));
 	}

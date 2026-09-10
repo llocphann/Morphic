@@ -81,7 +81,7 @@ export class BaseEmbedCollectionSession {
 		if (this.disposed) throw new Error("Bases collection session is already disposed.");
 		if (signal.aborted) throw abortError(signal);
 
-		const host = this.ownerDocument.createElement("div");
+		const host = this.ownerDocument.win.createDiv();
 		host.classList.add("cv-bases-collector-host");
 		this.host = host;
 		this.ownerDocument.body.appendChild(host);

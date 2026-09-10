@@ -150,7 +150,7 @@ export class RetainedDetachedGenerationHost {
 
 		this.supersedePending();
 		const generation = ++this.generation;
-		const stagingRoot = this.ownerDocument.createElement("div");
+		const stagingRoot = this.ownerDocument.win.createDiv();
 		const runtime = new RetainedDomRuntime(stagingRoot, this.runtimeOptions);
 
 		try {

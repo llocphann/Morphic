@@ -1055,3 +1055,11 @@ body .cv-clear-button-hidden {
     flex-wrap: wrap;
     gap: var(--size-4-1);
 }
+
+.workspace-leaf-content.cv-hide-navigation > .view-header {
+    display: none;
+}
+
+.morphic-navigation-hold {
+    background: var(--background-primary);
+}

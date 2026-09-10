@@ -101,7 +101,7 @@ export class RetainedStaticOwnerSurfaceRegistry<Owner extends object> {
 	}
 
 	private createSurface(ownerDocument: Document): RetainedStaticOwnerSurface {
-		const root = ownerDocument.createElement("div");
+		const root = ownerDocument.win.createDiv();
 		root.classList.add(this.rootClassName);
 		return {
 			root,

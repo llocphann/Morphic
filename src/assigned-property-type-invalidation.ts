@@ -33,7 +33,6 @@ export function registerAssignedPropertyTypeInvalidation(
 	const plugin = lifecycle as unknown as Partial<Plugin>;
 	if (typeof plugin.addCommand === "function" && typeof plugin.register === "function") {
 		installCustomViews04Capabilities(lifecycle as unknown as Plugin, app);
-		registerCapabilityStyles(lifecycle);
 	}
 
 	if (!invalidation) return;
@@ -50,19 +49,4 @@ export function registerAssignedPropertyTypeInvalidation(
 
 	manager.on("changed", onChanged);
 	lifecycle.register(() => manager.off("changed", onChanged));
-}
-
-function registerCapabilityStyles(lifecycle: LifecycleRegistrar): void {
-	const style = activeWindow.createEl("style");
-	style.setAttribute("data-morphic-cv04-capabilities", "true");
-	style.textContent = `
-.workspace-leaf-content.cv-hide-navigation > .view-header {
-	display: none;
-}
-.morphic-navigation-hold {
-	background: var(--background-primary);
-}
-`;
-	activeDocument.head.appendChild(style);
-	lifecycle.register(() => style.remove());
 }

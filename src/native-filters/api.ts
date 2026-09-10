@@ -140,7 +140,7 @@ class NativeFilterEditorSession {
 
 	mount(): void {
 		if (this.disposed || this.embed) return;
-		const internalHost = this.host.ownerDocument.createElement("div");
+		const internalHost = this.host.ownerDocument.win.createDiv();
 		this.internalHost = internalHost;
 		const embed = this.factory(
 			{ app: this.app, containerEl: internalHost, sourcePath: "", linktext: "" },
@@ -195,7 +195,7 @@ async function discoverQueryConstructor(
 	factory: EmbedFactory,
 	file: TFile,
 ): Promise<QueryConstructor> {
-	const host = activeWindow.createDiv();
+	const host = activeDocument.win.createDiv();
 	const seed = factory({ app, containerEl: host, sourcePath: "", linktext: "" }, file, "");
 	try {
 		if (typeof seed.loadQuery !== "function" || !seed.controller?.filterMenu?.globalFilterBuilder) {

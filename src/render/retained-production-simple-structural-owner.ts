@@ -463,7 +463,7 @@ export class RetainedSimpleStructuralOwnerSurfaceRegistry<Owner extends object> 
 	}
 
 	private createSurface(ownerDocument: Document): RetainedSimpleStructuralOwnerSurface {
-		const root = ownerDocument.createElement("div");
+		const root = ownerDocument.win.createDiv();
 		root.classList.add(this.rootClassName);
 		const renderer = new RetainedProductionSimpleStructuralOwnerRenderer(root);
 		let linkBinding: OverlayLinkBinding | null = null;
@@ -648,7 +648,7 @@ function findComment(root: Node, data: string): Comment | null {
 function parseStructuralHtmlBodyFragment(ownerDocument: Document, source: string): DocumentFragment {
 	const Parser = ownerDocument.defaultView?.DOMParser ?? DOMParser;
 	const parsedDocument = new Parser().parseFromString(source, "text/html");
-	const fragment = ownerDocument.createDocumentFragment();
+	const fragment = ownerDocument.win.createFragment();
 	for (const child of Array.from(parsedDocument.body.childNodes)) {
 		fragment.appendChild(ownerDocument.importNode(child, true));
 	}

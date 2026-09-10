@@ -38,7 +38,7 @@ export class RetainedKeyedSlotScope {
 		readonly ownerDocument: Document,
 		options: RetainedDomRuntimeOptions = {},
 	) {
-		this.host = ownerDocument.createElement("div");
+		this.host = ownerDocument.win.createDiv();
 		this.runtime = new RetainedDomRuntime(this.host, options);
 	}
 
