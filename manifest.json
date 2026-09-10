@@ -1,7 +1,7 @@
 {
   "id": "morphic",
   "name": "Morphic",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.11.10",
   "description": "Transform Markdown notes into fast, programmable views with rules, templates, Bases integration, and live editing.",
   "author": "Lộc Phan",

@@ -1,6 +1,6 @@
 {
     "name": "morphic",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "private": true,
     "description": "Performance-first programmable views for Obsidian notes, with rules, templates, Bases integration, and live editing.",
     "main": "main.js",
@@ -9,7 +9,7 @@
         "dev": "node esbuild.config.mjs",
         "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
         "version": "node version-bump.mjs && git add manifest.json versions.json",
-        "lint": "eslint .",
+        "lint": "eslint . --max-warnings=0",
         "lint:fix": "eslint . --fix",
         "test": "vitest run",
         "test:watch": "vitest",

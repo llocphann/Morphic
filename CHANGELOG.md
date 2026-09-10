@@ -2,6 +2,15 @@
 
 All notable Morphic changes will be documented here.
 
+## 0.1.2 — 2026-09-11
+
+### Lint hygiene
+
+- Reduced the repository ESLint baseline from 109 warnings to zero while preserving the existing runtime behavior and full test suite.
+- Scoped `activeDocument` guidance away from Vitest/jsdom fixtures where the global test `document` is intentional and does not represent Obsidian popout-window runtime code.
+- Documented Obsidian's intentionally `any`-typed extension surface as an explicit trusted platform boundary instead of emitting cascading non-actionable unsafe-value warnings throughout Morphic internals.
+- Hardened the release lint command with `--max-warnings=0`, so any future actionable ESLint warning blocks CI and release publication.
+
 ## 0.1.1 — 2026-09-11
 
 ### Fixes
