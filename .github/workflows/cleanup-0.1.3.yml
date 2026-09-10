@@ -1,18 +1,18 @@
-name: Morphic 0.1.3 strict lint probe
+name: Morphic 0.1.3 source cleanup
 
 on:
   push:
     branches:
       - cleanup/0.1.3
     paths:
-      - "eslint.config.mjs"
+      - "scripts/cleanup-0.1.3.mjs"
       - ".github/workflows/cleanup-0.1.3.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  lint:
+  transform:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout cleanup branch
@@ -25,11 +25,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify pinned npm runner
-        run: node scripts/pinned-npm.mjs --version
+      - name: Apply exact source cleanup
+        run: node scripts/cleanup-0.1.3.mjs
 
-      - name: Install dependencies
-        run: node scripts/pinned-npm.mjs install --ignore-scripts --no-package-lock
+      - name: Verify patch hygiene
+        run: git diff --check
 
-      - name: Strict lint
-        run: node scripts/pinned-npm.mjs run lint
+      - name: Commit transformed source
+        shell: bash
+        run: |
+          if git diff --quiet -- src styles.css; then
+            echo "Expected strict source cleanup produced no diff" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src styles.css
+          git commit -m "refactor: eliminate current Obsidian source lint violations"
+          git push origin HEAD:cleanup/0.1.3
