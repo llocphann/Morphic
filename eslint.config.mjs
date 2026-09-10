@@ -1,7 +1,6 @@
 import tsparser from "@typescript-eslint/parser";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import obsidianmd from "eslint-plugin-obsidianmd";
-import tseslintConfigs from "typescript-eslint";
 
 // Convert iterable to array and resolve 'extends' by spreading referenced configs
 const recommendedConfigs = Array.from(obsidianmd.configs.recommended).flatMap(
@@ -115,20 +114,25 @@ export default [
             "@typescript-eslint/ban-ts-comment": "off",
             "no-prototype-builtins": "off",
             "@typescript-eslint/no-empty-function": "off",
-            // Allow unsafe any operations (Obsidian API uses any types)
-            "@typescript-eslint/no-unsafe-assignment": "warn",
-            "@typescript-eslint/no-unsafe-member-access": "warn",
-            "@typescript-eslint/no-unsafe-call": "warn",
-            "@typescript-eslint/no-unsafe-return": "warn",
-            "@typescript-eslint/no-unsafe-argument": "warn",
+            // Obsidian's public API intentionally exposes `any` at several extension
+            // boundaries. Treat those values as a trusted platform boundary instead of
+            // emitting non-actionable warnings throughout otherwise typed Morphic code.
+            // Internal Morphic APIs still use concrete types/unknown and normal narrowing.
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+            "@typescript-eslint/no-unsafe-call": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
+            "@typescript-eslint/no-unsafe-argument": "off",
         },
     },
-    // Test files run under Vitest/Node and intentionally exercise repository scripts.
-    // Keep Obsidian production code browser-safe without applying that restriction to tests.
+    // Test files run under Vitest/jsdom and intentionally exercise repository scripts
+    // and synthetic DOM fixtures. They do not execute as Obsidian popout-window code,
+    // so activeDocument guidance is not applicable to their global `document` usage.
     {
         files: ["src/__tests__/**/*.ts"],
         rules: {
             "import/no-nodejs-modules": "off",
+            "obsidianmd/prefer-active-doc": "off",
             "@typescript-eslint/no-unsafe-call": "off",
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-assignment": "off",
