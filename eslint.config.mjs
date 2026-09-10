@@ -1,41 +1,7 @@
-import tsparser from "@typescript-eslint/parser";
-import tseslint from "@typescript-eslint/eslint-plugin";
+import { defineConfig } from "eslint/config";
 import obsidianmd from "eslint-plugin-obsidianmd";
 
-// Convert iterable to array and resolve 'extends' by spreading referenced configs
-const recommendedConfigs = Array.from(obsidianmd.configs.recommended).flatMap(
-    (config) => {
-        if (config.extends) {
-            // If config has 'extends', spread the extended configs first, then the current config
-            const {
-                extends: extendedConfigs,
-                files: parentFiles,
-                ...rest
-            } = config;
-            // Resolve extended configs (they should be arrays)
-            const resolved = Array.isArray(extendedConfigs)
-                ? extendedConfigs.flat()
-                : [extendedConfigs];
-            return [
-                // Spread the extended configs, ensuring they inherit parent's files if needed
-                ...resolved.map((cfg) => {
-                    // If the extended config doesn't have files, inherit from parent
-                    // This is critical for TypeScript type-checked rules
-                    if (!cfg.files && parentFiles) {
-                        return { ...cfg, files: parentFiles };
-                    }
-                    return cfg;
-                }),
-                // Then include the rest of the config (which already has files specified)
-                rest,
-            ];
-        }
-        return config;
-    },
-);
-
-export default [
-    // Global ignores (replaces .eslintignore)
+export default defineConfig([
     {
         ignores: [
             "node_modules/**",
@@ -46,47 +12,16 @@ export default [
             "package.json",
         ],
     },
-    // Use the converted configs, ensuring all have proper file filters
-    ...recommendedConfigs
-        .map((config) => {
-            // If config has no files specified, don't apply it (or apply only to non-TypeScript files)
-            if (!config.files) {
-                // Configs without files should not apply TypeScript rules
-                if (
-                    config.plugins?.["@typescript-eslint"] ||
-                    config.rules?.["@typescript-eslint"]
-                ) {
-                    // Skip configs with TypeScript rules that don't have file filters
-                    return null;
-                }
-                // For other configs without files, apply to all files except .mjs
-                return {
-                    ...config,
-                    files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
-                };
-            }
-            // Ensure TypeScript configs with type-checked rules only apply to .ts files
-            if (config.files && config.files.some((f) => f.includes("*.ts"))) {
-                return {
-                    ...config,
-                    files: config.files.filter(
-                        (f) => f.includes("*.ts") || f.includes("*.tsx"),
-                    ),
-                };
-            }
-            return config;
-        })
-        .filter(Boolean), // Remove null entries
+    ...obsidianmd.configs.recommended,
     {
         files: ["**/*.ts"],
         languageOptions: {
-            parser: tsparser,
             parserOptions: {
-                project: true,
-                sourceType: "module",
+                projectService: {
+                    allowDefaultProject: ["eslint.config.*"],
+                },
             },
             globals: {
-                // Browser globals
                 document: "readonly",
                 console: "readonly",
                 setTimeout: "readonly",
@@ -96,27 +31,18 @@ export default [
                 requestAnimationFrame: "readonly",
                 cancelAnimationFrame: "readonly",
                 window: "readonly",
-                // Obsidian popout-window globals
                 activeDocument: "readonly",
                 activeWindow: "readonly",
-                // Node globals (for build scripts)
                 process: "readonly",
                 Buffer: "readonly",
             },
         },
-        plugins: {
-            "@typescript-eslint": tseslint,
-        },
         rules: {
-            // TypeScript rules
             "no-unused-vars": "off",
             "@typescript-eslint/no-unused-vars": ["error", { args: "none" }],
             "@typescript-eslint/ban-ts-comment": "off",
             "no-prototype-builtins": "off",
             "@typescript-eslint/no-empty-function": "off",
-            // 0.1.3 source-cleanliness gate: these are intentionally errors rather
-            // than suppressed API-boundary warnings. External values must be narrowed
-            // or wrapped before they enter typed Morphic code.
             "@typescript-eslint/no-unsafe-assignment": "error",
             "@typescript-eslint/no-unsafe-member-access": "error",
             "@typescript-eslint/no-unsafe-call": "error",
@@ -124,16 +50,15 @@ export default [
             "@typescript-eslint/no-unsafe-argument": "error",
             "@typescript-eslint/no-redundant-type-constituents": "error",
             "@typescript-eslint/no-unnecessary-type-assertion": "error",
+            "obsidianmd/prefer-create-el": "error",
         },
     },
-    // Test files run under Vitest/jsdom and intentionally exercise repository scripts
-    // and synthetic DOM fixtures. They do not execute as Obsidian popout-window code,
-    // so activeDocument guidance is not applicable to their global `document` usage.
     {
         files: ["src/__tests__/**/*.ts"],
         rules: {
-            "import/no-nodejs-modules": "off",
+            "obsidianmd/no-nodejs-modules": "off",
             "obsidianmd/prefer-active-doc": "off",
+            "obsidianmd/prefer-create-el": "off",
             "@typescript-eslint/no-unsafe-call": "off",
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-assignment": "off",
@@ -142,4 +67,4 @@ export default [
             "@typescript-eslint/unbound-method": "off",
         },
     },
-];
+]);
