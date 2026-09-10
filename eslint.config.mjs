@@ -114,15 +114,17 @@ export default [
             "@typescript-eslint/ban-ts-comment": "off",
             "no-prototype-builtins": "off",
             "@typescript-eslint/no-empty-function": "off",
-            // Obsidian's public API intentionally exposes `any` at several extension
-            // boundaries. Treat those values as a trusted platform boundary instead of
-            // emitting non-actionable warnings throughout otherwise typed Morphic code.
-            // Internal Morphic APIs still use concrete types/unknown and normal narrowing.
-            "@typescript-eslint/no-unsafe-assignment": "off",
-            "@typescript-eslint/no-unsafe-member-access": "off",
-            "@typescript-eslint/no-unsafe-call": "off",
-            "@typescript-eslint/no-unsafe-return": "off",
-            "@typescript-eslint/no-unsafe-argument": "off",
+            // 0.1.3 source-cleanliness gate: these are intentionally errors rather
+            // than suppressed API-boundary warnings. External values must be narrowed
+            // or wrapped before they enter typed Morphic code.
+            "@typescript-eslint/no-unsafe-assignment": "error",
+            "@typescript-eslint/no-unsafe-member-access": "error",
+            "@typescript-eslint/no-unsafe-call": "error",
+            "@typescript-eslint/no-unsafe-return": "error",
+            "@typescript-eslint/no-unsafe-argument": "error",
+            "@typescript-eslint/no-redundant-type-constituents": "error",
+            "@typescript-eslint/no-unnecessary-type-assertion": "error",
+            "obsidianmd/prefer-create-el": "error",
         },
     },
     // Test files run under Vitest/jsdom and intentionally exercise repository scripts
@@ -139,15 +141,6 @@ export default [
             "@typescript-eslint/no-unsafe-member-access": "off",
             "@typescript-eslint/no-unsafe-return": "off",
             "@typescript-eslint/unbound-method": "off",
-        },
-    },
-    // The legacy renderer intentionally keeps explicit casts at the boundary between
-    // normalized Bases data and expression values. They document the adapter boundary
-    // even when the current structural types happen to be directly assignable.
-    {
-        files: ["src/renderer.ts"],
-        rules: {
-            "@typescript-eslint/no-unnecessary-type-assertion": "off",
         },
     },
 ];
