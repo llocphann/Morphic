@@ -10,11 +10,15 @@ export default defineConfig([
             "*.config.mjs",
             "vitest.config.ts",
             "package.json",
+            "scripts/**",
+            "version-bump.mjs",
+            "__mocks__/**",
+            "src/__tests__/**",
         ],
     },
     ...obsidianmd.configs.recommended,
     {
-        files: ["**/*.ts"],
+        files: ["src/**/*.ts"],
         languageOptions: {
             parserOptions: {
                 projectService: {
@@ -33,8 +37,6 @@ export default defineConfig([
                 window: "readonly",
                 activeDocument: "readonly",
                 activeWindow: "readonly",
-                process: "readonly",
-                Buffer: "readonly",
             },
         },
         rules: {
@@ -51,20 +53,6 @@ export default defineConfig([
             "@typescript-eslint/no-redundant-type-constituents": "error",
             "@typescript-eslint/no-unnecessary-type-assertion": "error",
             "obsidianmd/prefer-create-el": "error",
-        },
-    },
-    {
-        files: ["src/__tests__/**/*.ts"],
-        rules: {
-            "obsidianmd/no-nodejs-modules": "off",
-            "obsidianmd/prefer-active-doc": "off",
-            "obsidianmd/prefer-create-el": "off",
-            "@typescript-eslint/no-unsafe-call": "off",
-            "@typescript-eslint/no-unsafe-argument": "off",
-            "@typescript-eslint/no-unsafe-assignment": "off",
-            "@typescript-eslint/no-unsafe-member-access": "off",
-            "@typescript-eslint/no-unsafe-return": "off",
-            "@typescript-eslint/unbound-method": "off",
         },
     },
 ]);
