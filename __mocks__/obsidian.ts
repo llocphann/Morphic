@@ -28,11 +28,26 @@ function installObsidianDomHelpers(): void {
 		};
 	}
 
+	const detachedDocumentWindows = new WeakMap<Document, Window>();
+	const getDocumentWindow = (ownerDocument: Document): Window => {
+		if (ownerDocument.defaultView) return ownerDocument.defaultView;
+		const cached = detachedDocumentWindows.get(ownerDocument);
+		if (cached) return cached;
+
+		const facade = Object.create(window) as Window;
+		Object.defineProperty(facade, "document", {
+			configurable: true,
+			value: ownerDocument,
+		});
+		detachedDocumentWindows.set(ownerDocument, facade);
+		return facade;
+	};
+
 	if (Object.getOwnPropertyDescriptor(Document.prototype, "win") === undefined) {
 		Object.defineProperty(Document.prototype, "win", {
 			configurable: true,
 			get(this: Document): Window {
-				return this.defaultView ?? window;
+				return getDocumentWindow(this);
 			},
 		});
 	}
