@@ -1,0 +1,40 @@
+name: Morphic 0.1.3 source cleanup
+
+on:
+  push:
+    branches:
+      - cleanup/0.1.3
+    paths:
+      - "scripts/cleanup-0.1.3.mjs"
+      - ".github/workflows/cleanup-0.1.3.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  transform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cleanup branch
+        uses: actions/checkout@v4
+        with:
+          ref: cleanup/0.1.3
+
+      - name: Apply exact source transform
+        run: node scripts/cleanup-0.1.3.mjs
+
+      - name: Verify patch hygiene
+        run: git diff --check
+
+      - name: Commit transformed source
+        shell: bash
+        run: |
+          if git diff --quiet -- src/render/keyed-dom-reconciler.ts src/renderer.ts; then
+            echo "Expected source transform produced no diff" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/render/keyed-dom-reconciler.ts src/renderer.ts
+          git commit -m "refactor: eliminate strict type-safety violations"
+          git push origin HEAD:cleanup/0.1.3
