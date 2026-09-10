@@ -5,6 +5,7 @@ on:
     branches:
       - cleanup/0.1.3
     paths:
+      - "eslint.config.mjs"
       - ".github/workflows/cleanup-0.1.3.yml"
 
 permissions:
