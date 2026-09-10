@@ -1,6 +1,45 @@
 // eslint-disable-next-line no-restricted-imports
 import momentLibrary from "moment";
 
+function installObsidianDomHelpers(): void {
+	if (typeof window === "undefined" || typeof document === "undefined") return;
+
+	const windowPrototype = Window.prototype;
+	if (typeof windowPrototype.createDiv !== "function") {
+		windowPrototype.createDiv = function (): HTMLDivElement {
+			return this.document.createElement("div");
+		};
+	}
+	if (typeof windowPrototype.createSpan !== "function") {
+		windowPrototype.createSpan = function (): HTMLSpanElement {
+			return this.document.createElement("span");
+		};
+	}
+	if (typeof windowPrototype.createEl !== "function") {
+		windowPrototype.createEl = function <K extends keyof HTMLElementTagNameMap>(
+			tagName: K,
+		): HTMLElementTagNameMap[K] {
+			return this.document.createElement(tagName);
+		};
+	}
+	if (typeof windowPrototype.createFragment !== "function") {
+		windowPrototype.createFragment = function (): DocumentFragment {
+			return this.document.createDocumentFragment();
+		};
+	}
+
+	if (Object.getOwnPropertyDescriptor(Document.prototype, "win") === undefined) {
+		Object.defineProperty(Document.prototype, "win", {
+			configurable: true,
+			get(this: Document): Window {
+				return this.defaultView ?? window;
+			},
+		});
+	}
+}
+
+installObsidianDomHelpers();
+
 export const moment = momentLibrary;
 
 export class App {}
