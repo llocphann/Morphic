@@ -6,7 +6,7 @@ import {
 	processLogicBlocks,
 	resolveDeferredMarkdownPlaceholder,
 } from "./expression";
-import type { ExprContext, ExprValueArray } from "./expression";
+import type { ExprContext } from "./expression";
 import { stripFrontmatter } from "./frontmatter";
 import type { ViewConfig } from "./types";
 import { executeCustomViewJavaScript } from "./script-engine";
@@ -441,7 +441,7 @@ export async function renderTemplate(
 		frontmatter,
 		bodyContent,
 		variables: {},
-		bases: bases as unknown as ExprValueArray,
+		bases,
 		deferredMarkdown: {
 			nextId: 0,
 			values: {},
@@ -977,7 +977,7 @@ async function resolveTemplateRaw(
 		frontmatter,
 		bodyContent,
 		variables: {},
-		bases: bases as unknown as ExprValueArray,
+		bases,
 		deferredMarkdown: {
 			nextId: 0,
 			values: {},
