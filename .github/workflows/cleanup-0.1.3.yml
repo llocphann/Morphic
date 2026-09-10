@@ -1,4 +1,4 @@
-name: Morphic 0.1.3 source cleanup
+name: Morphic 0.1.3 strict lint probe
 
 on:
   push:
@@ -9,10 +9,10 @@ on:
       - ".github/workflows/cleanup-0.1.3.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  transform:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout cleanup branch
@@ -31,21 +31,5 @@ jobs:
       - name: Install dependencies
         run: node scripts/pinned-npm.mjs install --ignore-scripts --no-package-lock
 
-      - name: Apply official lint autofixes
-        shell: bash
-        run: |
-          node scripts/pinned-npm.mjs run lint:fix || true
-          git diff --check
-
-      - name: Commit autofixed source
-        shell: bash
-        run: |
-          if git diff --quiet -- src; then
-            echo "Obsidian lint autofix produced no source changes" >&2
-            exit 1
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src
-          git commit -m "refactor: apply current Obsidian lint autofixes"
-          git push origin HEAD:cleanup/0.1.3
+      - name: Strict lint
+        run: node scripts/pinned-npm.mjs run lint
