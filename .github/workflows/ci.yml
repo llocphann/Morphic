@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify pinned npm runner
+        run: |
+          node --check scripts/pinned-npm.mjs
+          node scripts/pinned-npm.mjs --version
+
+      - name: Install dependencies
+        run: node scripts/pinned-npm.mjs install --ignore-scripts --no-package-lock
+
+      - name: Check repository harness syntax
+        run: |
+          node --check scripts/competitive-benchmark.mjs
+          node --check scripts/provenance-audit.mjs
+          node --check scripts/check-release-metadata.mjs
+          node --check scripts/repository-hygiene.mjs
+          node --check version-bump.mjs
+
+      - name: Verify repository convergence
+        run: node scripts/pinned-npm.mjs run check:repo-hygiene
+
+      - name: Verify release metadata
+        run: node scripts/pinned-npm.mjs run check:release-metadata
+
+      - name: Typecheck and build
+        run: node scripts/pinned-npm.mjs run build
+
+      - name: Test
+        run: node scripts/pinned-npm.mjs test
+
+      - name: Lint
+        run: node scripts/pinned-npm.mjs run lint
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Upload plugin bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: morphic-plugin-${{ github.sha }}
+          path: |
+            main.js
+            manifest.json
+            styles.css
+          if-no-files-found: error
+          retention-days: 7

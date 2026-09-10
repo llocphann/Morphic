@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Morphic? Describe the use case, expected behavior, and any performance or compatibility implications you can identify.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem does this solve, or what use case does it address?
+      placeholder: "I want to be able to ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe how you would like this to work. Include template examples, UI mockups, benchmark expectations, or screenshots if helpful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any workarounds or alternative approaches?
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance and compatibility impact
+      description: If relevant, explain whether this affects rendering, Canvas, Bases, Live Preview, mobile, startup, or memory usage.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or examples that would help us understand the request.

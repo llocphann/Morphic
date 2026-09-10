@@ -1,0 +1,11 @@
+Morphic
+Copyright (c) 2026 Lộc Phan
+
+Morphic is a substantially modified derivative of the project previously distributed as "Custom Views".
+New and modified Morphic code is distributed under the GNU General Public License version 3 only (GPL-3.0-only). See LICENSE.
+
+The upstream code incorporated into this repository was originally distributed under the MIT License. Its original copyright and license notice are preserved verbatim in LICENSE-MIT-ORIGINAL while the source-provenance audit remains open.
+
+The active audit is documented in docs/provenance/CUSTOM_VIEWS_0.4.0_AUDIT.md. Branch or history cleanup does not remove license obligations for any upstream material that remains in the release tree.
+
+This notice documents the current project identity and licensing state. If the final release tree is later certified to contain no substantial upstream implementation material, the attribution files and this notice may be reviewed again at that time.

@@ -1,0 +1,289 @@
+import { MarkdownView, TFile, type App } from "obsidian";
+import { describe, expect, it, vi } from "vitest";
+import CustomViewsPlugin from "../main";
+import {
+	InvalidationEngine,
+	ReactiveDataCore,
+	RenderScope,
+	type RenderPreparationContext,
+	type RenderTransaction,
+} from "../core";
+import { DEFAULT_SETTINGS } from "../settings";
+import type { ViewConfig } from "../types";
+import { compileRetainedStaticTemplate } from "../render/retained-static-owner-surface";
+
+interface MutableMarkdownView extends MarkdownView {
+	file: TFile | null;
+	contentEl: HTMLElement;
+	getState(): { mode: string; source: boolean };
+}
+
+interface CanvasNodeFixture {
+	file: TFile;
+	nodeEl: HTMLElement;
+}
+
+interface MarkdownInput {
+	view: MarkdownView;
+	file: TFile;
+	matchedConfig: ViewConfig;
+	mode: "preview";
+	stateKey: string;
+}
+
+interface CanvasInput {
+	node: CanvasNodeFixture;
+	file: TFile;
+	container: HTMLElement;
+	matchedConfig: ViewConfig | null;
+	isSchedulerCurrent: () => boolean;
+	stateKey: string;
+}
+
+type TestOwner = MarkdownView | CanvasNodeFixture;
+
+interface ProductionPreparerInternals {
+	settingsVersion: number;
+	nextScopeId: number;
+	scopeIds: WeakMap<HTMLElement, string>;
+	editableStates: WeakMap<HTMLElement, unknown>;
+	compartments: WeakMap<object, unknown>;
+	canvasOwners: Map<unknown, unknown>;
+	runtimeDataInvalidation: InvalidationEngine<TestOwner> | null;
+	runtimeDataCore: ReactiveDataCore<TestOwner> | null;
+	findMatchedConfig(file: TFile): ViewConfig | null;
+	prepareMarkdownRender(owner: MarkdownView, input: MarkdownInput, context: RenderPreparationContext): Promise<RenderTransaction>;
+	buildCanvasRenderInput(node: CanvasNodeFixture): CanvasInput | null;
+	prepareCanvasRender(owner: CanvasNodeFixture, input: CanvasInput, context: RenderPreparationContext): Promise<RenderTransaction>;
+}
+
+function createOwnerDocument(): Document {
+	return new DOMParser().parseFromString(
+		"<!doctype html><html><body></body></html>",
+		"text/html",
+	);
+}
+
+function createFile(path: string): TFile {
+	const file = new TFile();
+	file.path = path;
+	file.name = path.split("/").pop() ?? path;
+	file.basename = file.name.replace(/\.md$/, "");
+	file.extension = "md";
+	Object.defineProperty(file, "parent", {
+		value: { path: path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "" },
+		configurable: true,
+	});
+	file.stat = { ctime: 1, mtime: 2, size: 3 };
+	return file;
+}
+
+function createConfig(template: string): ViewConfig {
+	return {
+		id: "safe-leaf-view",
+		name: "Safe leaf view",
+		rules: { type: "group", operator: "AND", conditions: [] },
+		template,
+	};
+}
+
+function createApp(file: TFile): App {
+	return {
+		metadataCache: {
+			getFileCache(target: TFile) {
+				if (target !== file) return null;
+				return { frontmatter: { status: "Open" }, tags: [], links: [], embeds: [] };
+			},
+			getFirstLinkpathDest() {
+				return null;
+			},
+		},
+		vault: {
+			cachedRead: vi.fn(async () => "Body source"),
+			getMarkdownFiles: () => [file],
+		},
+		workspace: { openLinkText: vi.fn(async () => undefined) },
+	} as unknown as App;
+}
+
+function createPlugin(app: App, file: TFile, config: ViewConfig): ProductionPreparerInternals {
+	const plugin = Object.create(CustomViewsPlugin.prototype) as CustomViewsPlugin;
+	plugin.settings = {
+		...DEFAULT_SETTINGS,
+		enabled: true,
+		editableContent: false,
+		allowJavaScript: false,
+		workInLivePreview: true,
+		workInCanvas: true,
+		views: [config],
+	};
+	Object.defineProperty(plugin, "app", { value: app, configurable: true });
+	const internals = plugin as unknown as ProductionPreparerInternals;
+	internals.settingsVersion = 0;
+	internals.nextScopeId = 0;
+	internals.scopeIds = new WeakMap();
+	internals.editableStates = new WeakMap();
+	internals.compartments = new WeakMap();
+	internals.canvasOwners = new Map();
+	internals.findMatchedConfig = () => config;
+	const invalidation = new InvalidationEngine<TestOwner>(() => undefined);
+	const core = new ReactiveDataCore<TestOwner>(app, invalidation);
+	core.bootstrap([file]);
+	internals.runtimeDataInvalidation = invalidation;
+	internals.runtimeDataCore = core;
+	return internals;
+}
+
+function createView(ownerDocument: Document, file: TFile): MutableMarkdownView {
+	const view = Object.create(MarkdownView.prototype) as MutableMarkdownView;
+	view.file = file;
+	view.contentEl = ownerDocument.createElement("div");
+	view.getState = () => ({ mode: "preview", source: false });
+	return view;
+}
+
+function prepareContext(generation: number): { scope: RenderScope; context: RenderPreparationContext } {
+	const scope = new RenderScope();
+	Object.defineProperty(scope, "registerDomEvent", {
+		value: (target: EventTarget, type: string, listener: EventListenerOrEventListenerObject): void => {
+			target.addEventListener(type, listener);
+			scope.registerDisposer(() => target.removeEventListener(type, listener));
+		},
+		configurable: true,
+	});
+	scope.load();
+	return { scope, context: { generation, scope, signal: scope.signal } };
+}
+
+function commit(transaction: RenderTransaction): void {
+	expect(transaction.isValid?.()).not.toBe(false);
+	transaction.commit();
+}
+
+function installObsidianDomHelpers(): () => void {
+	const prototype = HTMLElement.prototype;
+	const originalAddClass = prototype.addClass;
+	const originalRemoveClass = prototype.removeClass;
+	const originalToggleClass = prototype.toggleClass;
+	prototype.addClass = function (...classes: string[]): void { this.classList.add(...classes); };
+	prototype.removeClass = function (...classes: string[]): void { this.classList.remove(...classes); };
+	prototype.toggleClass = function (className: string, value?: boolean): void {
+		this.classList.toggle(className, value);
+	};
+	return () => {
+		prototype.addClass = originalAddClass;
+		prototype.removeClass = originalRemoveClass;
+		prototype.toggleClass = originalToggleClass;
+	};
+}
+
+const DYNAMIC_TEMPLATE = "<article data-label=\"pre-{{ file.name }}-post\"><span>{{ file.name }}</span><b>Stable</b></article>";
+
+describe("production safe retained leaf eligibility", () => {
+	it("accepts static, path-identity, self-metadata and complete mixed attribute leaves", () => {
+		expect(compileRetainedStaticTemplate(createConfig("<p>Static</p>"), false)).not.toBeNull();
+		const ir = compileRetainedStaticTemplate(createConfig(DYNAMIC_TEMPLATE), false);
+		expect(ir).not.toBeNull();
+		expect(ir?.nodes.some((node) => node.kind === "text-slot")).toBe(true);
+		expect(ir?.nodes.some((node) => node.kind === "attribute-slot")).toBe(true);
+
+		// P7 expression-heavy-render is built from this exact class of warm,
+		// source-file metadata expression and should stay on the compiled retained path.
+		expect(compileRetainedStaticTemplate(createConfig("<p>{{ rating > 8 }}</p>"), false)).not.toBeNull();
+		expect(compileRetainedStaticTemplate(createConfig("<p>{{ status }}</p>"), false)).not.toBeNull();
+		expect(compileRetainedStaticTemplate(createConfig("<p>{{ file.name + \"!\" }}</p>"), false)).not.toBeNull();
+	});
+
+	it.each([
+		["mutable file stat", "<p>{{ file.mtime }}</p>"],
+		["self content", "<p>{{ content }}</p>"],
+		["wall clock", "<p>{{ now() }}</p>"],
+		["linked file", "<p>{{ file(\"Other\").name }}</p>"],
+		["implicit frontmatter linked property", "<p>{{ friend.status }}</p>"],
+		["markdown island", "<p>{{ \"Hello\" | markdown }}</p>"],
+		["raw html", "<p>{{ html(\"<b>Unsafe</b>\") }}</p>"],
+		["conditional", "{% if file.name %}<p>A</p>{% endif %}"],
+	])("keeps %s on explicit legacy fallback", (_label, template) => {
+		expect(compileRetainedStaticTemplate(createConfig(template), false)).toBeNull();
+	});
+
+	it("preserves existing CSS, JS and editable fallback fences", () => {
+		expect(compileRetainedStaticTemplate({ ...createConfig(DYNAMIC_TEMPLATE), css: "article {}" }, false)).toBeNull();
+		expect(compileRetainedStaticTemplate({ ...createConfig(DYNAMIC_TEMPLATE), js: "return true;" }, false)).toBeNull();
+		expect(compileRetainedStaticTemplate(createConfig(DYNAMIC_TEMPLATE), true)).toBeNull();
+	});
+
+	it("retains Markdown root and descendant identity for safe text plus attribute leaves", async () => {
+		const restoreDom = installObsidianDomHelpers();
+		try {
+			const ownerDocument = createOwnerDocument();
+			const file = createFile("Notes/Test.md");
+			const config = createConfig(DYNAMIC_TEMPLATE);
+			const internals = createPlugin(createApp(file), file, config);
+			const view = createView(ownerDocument, file);
+			const stateKey = `${file.path}::${config.id}::preview::0`;
+			const input: MarkdownInput = { view, file, matchedConfig: config, mode: "preview", stateKey };
+
+			const first = prepareContext(1);
+			commit(await internals.prepareMarkdownRender(view, input, first.context));
+			const firstRoot = view.contentEl.querySelector(".obsidian-custom-view-render");
+			const firstArticle = firstRoot?.querySelector("article");
+			const firstSpan = firstRoot?.querySelector("span");
+			const firstStable = firstRoot?.querySelector("b");
+			expect(firstArticle?.getAttribute("data-label")).toBe("pre-Test.md-post");
+			expect(firstSpan?.textContent).toBe("Test.md");
+
+			const second = prepareContext(2);
+			commit(await internals.prepareMarkdownRender(view, input, second.context));
+			expect(view.contentEl.querySelector(".obsidian-custom-view-render")).toBe(firstRoot);
+			expect(view.contentEl.querySelector("article")).toBe(firstArticle);
+			expect(view.contentEl.querySelector("span")).toBe(firstSpan);
+			expect(view.contentEl.querySelector("b")).toBe(firstStable);
+			first.scope.dispose();
+			second.scope.dispose();
+		} finally {
+			restoreDom();
+		}
+	});
+
+	it("retains Canvas root and descendant identity for safe text plus attribute leaves", async () => {
+		const restoreDom = installObsidianDomHelpers();
+		try {
+			const ownerDocument = createOwnerDocument();
+			const file = createFile("Notes/Canvas.md");
+			const config = createConfig(DYNAMIC_TEMPLATE);
+			const internals = createPlugin(createApp(file), file, config);
+			const nodeEl = ownerDocument.createElement("div");
+			const container = ownerDocument.createElement("div");
+			container.classList.add("markdown-preview-view");
+			nodeEl.appendChild(container);
+			const node: CanvasNodeFixture = { file, nodeEl };
+			const input = internals.buildCanvasRenderInput(node);
+			expect(input).not.toBeNull();
+			if (!input) throw new Error("Expected Canvas render input");
+
+			const first = prepareContext(1);
+			commit(await internals.prepareCanvasRender(node, input, first.context));
+			const firstRoot = container.querySelector(".obsidian-custom-view-render");
+			const firstArticle = firstRoot?.querySelector("article");
+			const firstSpan = firstRoot?.querySelector("span");
+			const firstStable = firstRoot?.querySelector("b");
+			expect(firstArticle?.getAttribute("data-label")).toBe("pre-Canvas.md-post");
+			expect(firstSpan?.textContent).toBe("Canvas.md");
+
+			const secondInput = internals.buildCanvasRenderInput(node);
+			expect(secondInput).not.toBeNull();
+			if (!secondInput) throw new Error("Expected second Canvas render input");
+			const second = prepareContext(2);
+			commit(await internals.prepareCanvasRender(node, secondInput, second.context));
+			expect(container.querySelector(".obsidian-custom-view-render")).toBe(firstRoot);
+			expect(container.querySelector("article")).toBe(firstArticle);
+			expect(container.querySelector("span")).toBe(firstSpan);
+			expect(container.querySelector("b")).toBe(firstStable);
+			first.scope.dispose();
+			second.scope.dispose();
+		} finally {
+			restoreDom();
+		}
+	});
+});

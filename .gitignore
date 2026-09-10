@@ -1,0 +1,25 @@
+# Dependencies and local package-manager state
+node_modules/
+package-lock.json
+
+# Local agent/tool state
+.codex/
+
+# Generated provenance audit evidence
+provenance-audit.json
+provenance-audit.md
+
+# Generated Obsidian plugin artifacts
+main.js
+*.map
+data.json
+
+# IDE/editor state
+.vscode/
+.cursor/
+.idea/
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db

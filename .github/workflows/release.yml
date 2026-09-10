@@ -1,0 +1,81 @@
+name: Release Morphic
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify pinned npm runner
+        run: |
+          node --check scripts/pinned-npm.mjs
+          node scripts/pinned-npm.mjs --version
+
+      - name: Install dependencies
+        run: node scripts/pinned-npm.mjs install --ignore-scripts --no-package-lock
+
+      - name: Check repository harness syntax
+        run: |
+          node --check scripts/competitive-benchmark.mjs
+          node --check scripts/provenance-audit.mjs
+          node --check scripts/check-release-metadata.mjs
+          node --check scripts/repository-hygiene.mjs
+          node --check version-bump.mjs
+
+      - name: Verify repository convergence
+        run: node scripts/pinned-npm.mjs run check:repo-hygiene
+
+      - name: Verify release metadata
+        run: node scripts/pinned-npm.mjs run check:release-metadata -- --tag "${GITHUB_REF_NAME}"
+
+      - name: Build
+        run: node scripts/pinned-npm.mjs run build
+
+      - name: Test
+        run: node scripts/pinned-npm.mjs test
+
+      - name: Lint
+        run: node scripts/pinned-npm.mjs run lint
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Generate checksums
+        run: sha256sum main.js manifest.json styles.css > SHA256SUMS.txt
+
+      - name: Attest release bundle
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            styles.css
+            manifest.json
+            SHA256SUMS.txt
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Morphic ${GITHUB_REF_NAME#v}" \
+            --generate-notes \
+            --verify-tag \
+            main.js manifest.json styles.css SHA256SUMS.txt
